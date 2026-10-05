@@ -11,19 +11,111 @@ Sistema de aluguel de veículos desenvolvido em C# com Entity Framework, SQL Ser
 - ASP.NET Core Web API
 - Entity Framework Core (Code First)
 - SQL Server Express
-- Swagger (a partir da Etapa 3)
+- Swagger / OpenAPI
+- LINQ
+- Git e GitHub
 
 ## Estrutura do projeto
-- `Locadora.Api/Model/`: classes de entidades
-- `Locadora.Api/Data/ApplicationContext.cs`: contexto do Entity Framework
-- `Locadora.Api/Migrations/`: migrations
-- `Locadora.Api/Scripts/schema.sql`: script SQL gerado
-- `Docs/`: diagramas, prints e relatórios de teste
+
+```text
+Locadora/
+├── Docs/
+│   ├── Evidencias-Etapa1/
+│   │   ├── consultaConstraints.png
+│   │   ├── consultaFK.png
+│   │   ├── dbdiagram.io.png
+│   │   ├── diagramasSSMS.png
+│   │   └── tabelasSSMS.png
+│   │
+│   ├── Evidencias-Etapa3/
+│   │   └── evidências dos testes realizados no Swagger
+│   │
+│   ├── Documentacao-API.md
+│   └── Relatorio-Testes.md
+│
+├── Locadora.Api/
+│   ├── Controllers/
+│   ├── Data/
+│   ├── Dtos/
+│   ├── Migrations/
+│   ├── Model/
+│   ├── Scripts/
+│   ├── Program.cs
+│   └── appsettings.json
+│
+└── README.md
+```
+### Principais diretórios
+
+- `Locadora.Api/Controllers/`: endpoints REST da aplicação.
+- `Locadora.Api/Model/`: classes das entidades.
+- `Locadora.Api/Dtos/`: objetos utilizados nas requisições e respostas da API.
+- `Locadora.Api/Data/ApplicationContext.cs`: contexto do Entity Framework.
+- `Locadora.Api/Migrations/`: migrations do banco de dados.
+- `Locadora.Api/Scripts/schema.sql`: script SQL gerado.
+- `Docs/Evidencias-Etapa1/`: evidências da modelagem e implementação do banco.
+- `Docs/Evidencias-Etapa3/`: evidências dos testes realizados no Swagger.
+- `Docs/Documentacao-API.md`: documentação detalhada dos endpoints.
+- `Docs/Relatorio-Testes.md`: relatório dos testes executados na API.
 
 ## Como executar
-1. Instale o SQL Server Express e ajuste a connection string em `Locadora.Api/appsettings.json`.
-2. No Console do Gerenciador de Pacotes: `Update-Database`
-3. *(a preencher...)*
+
+### Pré-requisitos
+
+É necessário possuir:
+
+- .NET SDK
+- SQL Server Express
+- Visual Studio ou outra IDE compatível
+- Entity Framework Core configurado
+
+### Execução
+
+1. Clone o repositório.
+
+2. Acesse o projeto:
+
+```bash
+cd Locadora.Api
+```
+
+3. Verifique a connection string em:
+
+```text
+appsettings.json
+```
+
+4. Atualize/crie o banco de dados utilizando as migrations:
+
+```powershell
+Update-Database
+```
+
+Ou, utilizando a CLI do Entity Framework:
+
+```bash
+dotnet ef database update
+```
+
+5. Execute a aplicação:
+
+```bash
+dotnet run
+```
+
+6. Com a aplicação em execução, acesse o Swagger:
+
+```text
+http://localhost:5000/swagger
+```
+
+ou:
+
+```text
+http://localhost:5000/swagger/index.html
+```
+
+> A porta pode variar de acordo com a configuração utilizada durante a execução.
 
 ---
 
@@ -32,8 +124,8 @@ Sistema de aluguel de veículos desenvolvido em C# com Entity Framework, SQL Ser
 | Etapa | Descrição | Status |
 |---|---|---|
 | 1 | Modelagem do banco de dados | Concluída |
-| 2 | Implementação do backend (CRUD + filtros) | Pendente |
-| 3 | Testes e documentação (Swagger) | Pendente |
+| 2 | Implementação do backend (CRUD + filtros) | Concluída |
+| 3 | Testes e documentação (Swagger) | Concluída |
 | 4 | Vídeo apresentação (pitch) | Pendente |
 
 ---
@@ -62,12 +154,21 @@ Sistema de aluguel de veículos desenvolvido em C# com Entity Framework, SQL Ser
 - Exclusão restrita: não é possível excluir registros com dependentes
 - DataDevolucao, KmFinal e ValorTotal são opcionais até a devolução do veículo
 
-### Evidências
-- `Docs/diagrama-conceitual.png`
-- `Docs/ssms-tabelas.png`
-- `Docs/ssms-constraints.png`
-- `Docs/ssms-foreign-keys.png`
-- `Docs/ssms-diagrama.png`
+## Evidências
+
+As evidências da Etapa 1 estão disponíveis em:
+
+```text
+Docs/Evidencias-Etapa1/
+```
+
+Arquivos:
+
+- `consultaConstraints.png`
+- `consultaFK.png`
+- `dbdiagram.io.png`
+- `diagramasSSMS.png`
+- `tabelasSSMS.png`
 
 ---
 
@@ -145,8 +246,125 @@ Ordem recomendada para popular o banco, por causa das chaves estrangeiras: Fabri
 ```
 ---
 
-## Etapa 3 — Testes e Documentação
-*(a preencher...)*
+# Etapa 3 — Testes e Documentação
+
+A terceira etapa do projeto teve como objetivo integrar o **Swagger/OpenAPI**, documentar os endpoints da API e realizar testes manuais das funcionalidades implementadas.
+
+## Swagger / OpenAPI
+
+A aplicação possui integração com Swagger, permitindo visualizar e testar os endpoints diretamente pelo navegador.
+
+Com a API em execução, a interface pode ser acessada em:
+
+```text
+/swagger
+```
+
+ou:
+
+```text
+/swagger/index.html
+```
+
+O Swagger permite:
+
+- visualizar os endpoints disponíveis;
+- identificar os métodos HTTP;
+- consultar os parâmetros necessários;
+- enviar corpos JSON;
+- executar requisições;
+- visualizar os códigos HTTP retornados;
+- analisar os dados retornados pela API.
+
+## Testes realizados
+
+Durante a Etapa 3 foram realizados testes manuais dos endpoints utilizando a interface do Swagger.
+
+Foram testadas as operações:
+
+- criação de registros (`POST`);
+- consulta de registros (`GET`);
+- atualização de registros (`PUT`);
+- exclusão de registros (`DELETE`);
+- registro de devolução de veículo;
+- filtros e consultas especiais;
+- validações de parâmetros;
+- consulta de recurso inexistente;
+- regras de negócio e conflitos.
+
+Os testes confirmaram respostas HTTP como:
+
+```text
+200 OK
+201 Created
+204 No Content
+400 Bad Request
+404 Not Found
+409 Conflict
+```
+
+## Consultas especiais testadas
+
+Foram validadas as cinco consultas especiais implementadas na Etapa 2:
+
+1. Veículos por fabricante.
+2. Veículos disponíveis.
+3. Clientes sem aluguel ativo.
+4. Aluguéis por período.
+5. Faturamento por categoria.
+
+O endpoint de faturamento por categoria utiliza os dados de aluguel, veículo e categoria para produzir o relatório agrupado de faturamento.
+
+## Evidências
+
+As capturas de tela dos testes realizados no Swagger estão organizadas em:
+
+```text
+Docs/Evidencias-Etapa3/
+```
+
+As evidências registram:
+
+- endpoint utilizado;
+- método HTTP;
+- parâmetros ou corpo da requisição;
+- código HTTP retornado;
+- resposta apresentada pela API.
+
+## Documentação da API
+
+A documentação completa dos endpoints está disponível em:
+
+```text
+Docs/Documentacao-API.md
+```
+
+O documento apresenta as rotas da aplicação, métodos HTTP, parâmetros, corpos de requisição e códigos de resposta.
+
+## Relatório de testes
+
+O relatório dos testes executados está disponível em:
+
+```text
+Docs/Relatorio-Testes.md
+```
+
+O relatório registra os cenários executados durante a Etapa 3 e as respectivas evidências.
+
+## Resultado da Etapa 3
+
+Com a conclusão desta etapa, a API possui:
+
+- Swagger integrado e funcional;
+- endpoints REST disponíveis para teste;
+- CRUD das cinco entidades principais;
+- consultas e filtros específicos;
+- validação de dados;
+- tratamento de erros;
+- documentação dos endpoints;
+- relatório de testes;
+- evidências dos testes executados.
+
 ---
 
 ## Etapa 4 — Vídeo Apresentação
