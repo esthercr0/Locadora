@@ -80,17 +80,42 @@ public class AlugueisController : ControllerBase
     /// Filtro: faturamento agrupado por categoria de veículo (INNER JOIN explícito
     /// entre Aluguel, Veiculo e Categoria, com agregação/GroupBy).
     /// </summary>
+    /// <summary>
+    /// Filtro: faturamento agrupado por categoria de veículo (INNER JOIN explícito
+    /// entre Aluguel, Veiculo e Categoria, com agregação/GroupBy).
+    /// </summary>
     [HttpGet("faturamento-por-categoria")]
     public async Task<ActionResult<IEnumerable<FaturamentoCategoriaDto>>> GetFaturamentoPorCategoria()
     {
-        var relatorio = await (
-            from a in _context.Alugueis
-            join v in _context.Veiculos on a.VeiculoId equals v.Id
-            join c in _context.Categorias on v.CategoriaId equals c.Id
+        // INNER JOIN explícito entre Aluguel, Veiculo e Categoria.
+        // A consulta ao banco retorna os dados necessários para o relatório.
+        var dados = await (
+            from a in _context.Alugueis.AsNoTracking()
+            join v in _context.Veiculos.AsNoTracking()
+                on a.VeiculoId equals v.Id
+            join c in _context.Categorias.AsNoTracking()
+                on v.CategoriaId equals c.Id
             where a.ValorTotal != null
-            group a by new { c.Id, c.Nome } into g
-            select new FaturamentoCategoriaDto(g.Key.Id, g.Key.Nome, g.Count(), g.Sum(x => x.ValorTotal ?? 0))
-        ).AsNoTracking().OrderByDescending(r => r.FaturamentoTotal).ToListAsync();
+            select new
+            {
+                CategoriaId = c.Id,
+                CategoriaNome = c.Nome,
+                ValorTotal = a.ValorTotal ?? 0
+            }
+        ).ToListAsync();
+
+        // O agrupamento é realizado após a consulta para evitar
+        // incompatibilidade de tradução do GroupBy pelo Entity Framework.
+        var relatorio = dados
+            .GroupBy(x => new { x.CategoriaId, x.CategoriaNome })
+            .Select(g => new FaturamentoCategoriaDto(
+                g.Key.CategoriaId,
+                g.Key.CategoriaNome,
+                g.Count(),
+                g.Sum(x => x.ValorTotal)
+            ))
+            .OrderByDescending(x => x.FaturamentoTotal)
+            .ToList();
 
         return Ok(relatorio);
     }
