@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+//BD
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+//ctrl validation
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
@@ -20,17 +21,20 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(problemDetails);
         };
     });
-
+//erros
 builder.Services.AddProblemDetails();
-
-builder.Services.AddOpenApi();
+//swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
+//dev
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+//exceções
 app.UseExceptionHandler(exceptionHandlerApp =>
 {
     exceptionHandlerApp.Run(async context =>
