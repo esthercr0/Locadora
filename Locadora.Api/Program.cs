@@ -2,6 +2,7 @@ using Locadora.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 //BD
@@ -54,8 +55,22 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     });
 });
 
-app.MapControllers();
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
+// Em desenvolvimento, os arquivos ficam em ../frontend. No publish, em wwwroot.
+var frontendPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "frontend"));
+if (!Directory.Exists(frontendPath))
+    frontendPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+
+if (Directory.Exists(frontendPath))
+{
+    var frontendProvider = new PhysicalFileProvider(frontendPath);
+    app.Lifetime.ApplicationStopped.Register(frontendProvider.Dispose);
+    app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = frontendProvider });
+    app.UseStaticFiles(new StaticFileOptions { FileProvider = frontendProvider });
+}
+
+app.MapControllers();
 
 app.Run();

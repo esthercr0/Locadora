@@ -12,6 +12,6 @@ public record CategoriaCreateDto
     [MaxLength(255)]
     public string? Descricao { get; init; }
 
-    [Range(0.01, double.MaxValue, ErrorMessage = "O valor da diária base deve ser positivo.")]
+    [Range(typeof(decimal), "0.01", "99999999.99", ParseLimitsInInvariantCulture = true, ErrorMessage = "A diária base deve estar entre 0,01 e 99.999.999,99.")]
     public decimal ValorDiariaBase { get; init; }
 }
