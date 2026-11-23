@@ -1,10 +1,50 @@
+import { mountReports } from './reports.js';
 import { createApi, ApiError } from './api.js';
 
 const api = createApi();
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const currency = value => Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const field = (key, label, options = {}) => ({ key, label, ...options });
+const required = { required: true };
+const integer = (min = 0, max = 2147483647) => ({ ...required, type: 'number', min, max, step: 1 });
+const dateTime = { ...required, type: 'datetime-local' };
+const price = { ...required, type: 'number', min: 0.01, step: 0.01 };
 const config = {
+  veiculos: {
+    title: 'Veículos', singular: 'veículo', article: 'o', createLabel: 'Novo veículo',
+    description: 'Consulte e gerencie a frota.',
+    columns: ['Modelo', 'Placa', 'Fabricante', 'Categoria', 'Quilometragem', 'Ações'],
+    rowFields: ['modelo', 'placa', 'fabricanteNome', 'categoriaNome', 'quilometragem'],
+    filters: [field('modelo', 'Modelo'), field('placa', 'Placa')],
+    fields: [field('modelo', 'Modelo', { ...required, maxLength: 100 }),
+      field('placa', 'Placa', { ...required, maxLength: 8 }), field('anoFabricacao', 'Ano de fabricação', integer(1900, 2100)),
+      field('quilometragem', 'Quilometragem', integer()),
+      field('fabricanteId', 'Fabricante', { ...required, source: 'fabricantes', displayKey: 'fabricanteNome' }),
+      field('categoriaId', 'Categoria', { ...required, source: 'categorias', displayKey: 'categoriaNome' })]
+  },
+  clientes: {
+    title: 'Clientes', singular: 'cliente', article: 'o', createLabel: 'Novo cliente',
+    description: 'Gerencie os dados de contato dos clientes.',
+    columns: ['Nome', 'CPF', 'E-mail', 'Telefone', 'Ações'],
+    rowFields: ['nome', 'cpf', 'email', 'telefone'],
+    filters: [field('nome', 'Nome'), field('cpf', 'CPF')],
+    fields: [field('nome', 'Nome', { ...required, maxLength: 150 }),
+      field('cpf', 'CPF (11 dígitos)', { ...required, maxLength: 11, pattern: '[0-9]{11}' }),
+      field('email', 'E-mail', { ...required, type: 'email', maxLength: 150 }),
+      field('telefone', 'Telefone', { type: 'tel', maxLength: 20 })]
+  },
+  alugueis: {
+    title: 'Aluguéis', singular: 'aluguel', article: 'o', createLabel: 'Novo aluguel',
+    description: 'Acompanhe retiradas, previsões e devoluções.',
+    columns: ['Cliente', 'Placa', 'Retirada', 'Previsão', 'Situação', 'Total', 'Ações'],
+    rowFields: ['clienteNome', 'veiculoPlaca', 'dataRetirada', 'dataPrevistaDevolucao', 'situacao', 'valorTotal'],
+    filters: [field('cliente', 'Cliente'), field('placa', 'Placa')],
+    fields: [field('clienteId', 'Cliente', { ...required, source: 'clientes', displayKey: 'clienteNome' }),
+      field('veiculoId', 'Veículo disponível', { ...required, source: 'veiculos/disponiveis', displayKey: 'veiculoPlaca' }),
+      field('dataRetirada', 'Retirada', dateTime), field('dataPrevistaDevolucao', 'Previsão de devolução', dateTime),
+      field('kmInicial', 'Km inicial', integer()), field('valorDiaria', 'Diária (R$)', price)]
+  },
   fabricantes: {
     title: 'Fabricantes', singular: 'fabricante', article: 'o', createLabel: 'Novo fabricante',
     description: 'Organize as marcas e os países de origem da sua frota.',
@@ -46,10 +86,13 @@ function fieldMarkup(field, prefix, value = '', grid = false) {
   const attributes = [
     `id="${id}"`, `name="${field.key}"`,
     field.required ? 'required' : '',
+    field.pattern ? `pattern="${field.pattern}" inputmode="numeric"` : '',
     field.maxLength ? `maxlength="${field.maxLength}"` : '',
     ...['min', 'max', 'step'].map(key => field[key] !== undefined ? `${key}="${field[key]}"` : '')
   ].filter(Boolean).join(' ');
-  const input = field.type === 'textarea'
+  const input = field.source
+    ? `<select ${attributes}><option value="">Selecione</option>${field.options.map(item => `<option value="${escapeHtml(item.id)}" ${String(item.id) === String(value) ? 'selected' : ''}>${escapeHtml(item.nome ?? (item.modelo + ' · ' + item.placa))}</option>`).join('')}</select>`
+    : field.type === 'textarea'
     ? `<textarea ${attributes} rows="3">${escapeHtml(value)}</textarea>`
     : `<input ${attributes} type="${field.type || 'text'}" value="${escapeHtml(value)}">`;
   return `<div class="${grid ? field.full ? 'col-12' : 'col-md-6' : ''}"><div class="field"><label for="${id}">${field.label}${field.required ? ' <span aria-label="obrigatório">*</span>' : ''}</label>${input}</div></div>`;
@@ -139,10 +182,14 @@ function renderRows() {
     $('#result-count').textContent = 'Consulta indisponível'; $('#updated-at').textContent = ''; return;
   }
   body.innerHTML = state.rows.map(row => {
-    const cells = state.page === 'fabricantes'
+    const cells = c.rowFields ? c.rowFields.map(key => escapeHtml(displayValue(row, key))) : state.page === 'fabricantes'
       ? [`${escapeHtml(row.nome)}<small>#${row.id}</small>`, escapeHtml(row.paisOrigem) || '—']
       : [escapeHtml(row.nome), escapeHtml(row.descricao) || '—', currency(row.valorDiariaBase)];
-    const actions = [['details', 'Ver'], ['edit', 'Editar'], ['delete', 'Excluir']].map(([action, text]) => `<button type="button" class="button link${action === 'delete' ? ' danger' : ''}" data-action="${action}" data-id="${row.id}" aria-label="${text} ${escapeHtml(row.nome)}">${text}</button>`).join('');
+    const commands = [['details', 'Ver']];
+    if (!row.dataDevolucao) commands.push(['edit', 'Editar']);
+    if (state.page === 'alugueis' && !row.dataDevolucao) commands.push(['return', 'Devolver']);
+    commands.push(['delete', 'Excluir']);
+    const actions = commands.map(([action, text]) => `<button type="button" class="button link${action === 'delete' ? ' danger' : ''}" data-action="${action}" data-id="${row.id}" aria-label="${text} ${escapeHtml(row.nome ?? row.modelo ?? row.clienteNome)}">${text}</button>`).join('');
     return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}<td><div class="actions">${actions}</div></td></tr>`;
   }).join('') || `<tr><td colspan="${c.columns.length}" class="empty">${Object.values(state.filters).some(value => String(value).trim()) ? 'Nenhum registro encontrado. Altere ou limpe os filtros.' : `Nenhum${c.article === 'a' ? 'a' : ''} ${c.singular} cadastrad${c.article}. Use o botão acima para cadastrar.`}</td></tr>`;
   const count = state.rows.length;
@@ -187,7 +234,7 @@ function showDialog(title, body) {
 function lockForm(form, locked) {
   saving = locked;
   $('#close-dialog').disabled = locked;
-  form.querySelectorAll('input, textarea, button').forEach(control => { control.disabled = locked; });
+  form.querySelectorAll('input, textarea, select, button').forEach(control => { control.disabled = locked; });
   form.setAttribute('aria-busy', String(locked));
 }
 
@@ -198,7 +245,8 @@ async function recordAction(button) {
   try {
     const row = await api.get(type, id);
     if (type !== state.page || sequence !== actionSequence) return;
-    if (action === 'edit') openForm(type, row);
+    if (action === 'return') openForm(type, row, true);
+    else if (action === 'edit') openForm(type, row);
     else if (action === 'delete') openDelete(type, row);
     else openDetails(type, row);
   } catch (error) {
@@ -206,11 +254,42 @@ async function recordAction(button) {
   } finally { button.disabled = false; }
 }
 
-function openForm(type, record = null) {
+function displayValue(row, key) {
+  if (key === 'situacao') return row.dataDevolucao ? 'Finalizado' : 'Em aberto';
+  if (row[key] == null || row[key] === '') return '—';
+  if (key.startsWith('data')) return new Date(row[key]).toLocaleString('pt-BR');
+  if ((key.startsWith('valor') || key === 'faturamentoTotal')) return currency(row[key]);
+  return row[key];
+}
+
+async function openForm(type, record = null, returning = false) {
   const c = config[type];
-  showDialog(record ? `Editar ${c.singular}` : c.createLabel, `<form id="record-form" novalidate>
+  const title = returning ? 'Registrar devolução' : record ? `Editar ${c.singular}` : c.createLabel;
+  let fields = c.fields;
+  if (returning) fields = [field('dataDevolucao', 'Data e hora da devolução', { ...dateTime, min: record.dataRetirada }),
+    field('kmFinal', 'Km final', integer(record.kmInicial))];
+  else if (type === 'alugueis' && record) fields = fields.filter(f => ['dataPrevistaDevolucao', 'valorDiaria'].includes(f.key));
+  const sequence = ++actionSequence;
+  if (fields.some(field => field.source)) {
+    showDialog(title, '<div class="dialog-body" role="status">Carregando opções…</div>');
+    try {
+      fields = await Promise.all(fields.map(async f => f.source ? { ...f, options: await api.list(f.source) } : f));
+      if (fields.some(f => f.source && !f.options.length)) throw new Error('Confira se há cadastros e veículos disponíveis.');
+    } catch (error) {
+      if (dialog.open && sequence === actionSequence) {
+        const message = document.createElement('p');
+        message.className = 'dialog-body';
+        message.setAttribute('role', 'alert');
+        message.textContent = error.message;
+        $('#dialog-content').replaceChildren(message);
+      }
+      return;
+    }
+    if (!dialog.open || sequence !== actionSequence || type !== state.page) return;
+  }
+  showDialog(title, `<form id="record-form" novalidate>
     <div class="dialog-body"><p class="form-note">Campos com * são obrigatórios.</p><div class="alert" role="alert" data-error hidden></div>
-    <div class="row">${c.fields.map(field => fieldMarkup(field, 'record', record?.[field.key] ?? '', true)).join('')}</div></div>
+    <div class="row">${fields.map(field => fieldMarkup(field, 'record', record?.[field.key] ?? '', true)).join('')}</div></div>
     <div class="dialog-foot"><button type="button" class="button" data-close>Cancelar</button><button type="submit" class="button primary" id="save-record">${record ? 'Salvar alterações' : 'Cadastrar'}</button></div></form>`);
   const form = $('#record-form');
   form.addEventListener('submit', async event => {
@@ -220,13 +299,16 @@ function openForm(type, record = null) {
     form.querySelectorAll('input[type=text],textarea').forEach(input => { input.value = input.value.trim(); });
     if (!form.reportValidity()) return;
     const data = Object.fromEntries(new FormData(form));
-    if (type === 'categorias') data.valorDiariaBase = Number(data.valorDiariaBase);
+    for (const field of fields) {
+      if (field.source || field.type === 'number') data[field.key] = Number(data[field.key]);
+    }
     lockForm(form, true);
     const submitButton = $('#save-record'), originalLabel = submitButton.textContent;
     submitButton.textContent = 'Salvando…';
     let saved = false;
     try {
-      if (record) await api.update(type, record.id, data);
+      if (returning) await api.update(type, `${record.id}/devolucao`, data);
+      else if (record) await api.update(type, record.id, data);
       else await api.create(type, data);
       saved = true;
     } catch (error) { showError(form, error); }
@@ -234,20 +316,21 @@ function openForm(type, record = null) {
     if (saved) {
       closeDialog();
       const refreshed = await loadRows();
-      notify(refreshed ? `${c.singular[0].toUpperCase() + c.singular.slice(1)} ${record ? 'atualizad' : 'cadastrad'}${c.article} com sucesso.` : 'Registro salvo. Não foi possível atualizar a lista; use “Tentar novamente”.');
+      notify(refreshed && returning ? 'Devolução registrada.' : refreshed ? `${c.singular[0].toUpperCase() + c.singular.slice(1)} ${record ? 'atualizad' : 'cadastrad'}${c.article} com sucesso.` : 'Registro salvo. Não foi possível atualizar a lista; use “Tentar novamente”.');
     }
   });
 }
 
 function openDetails(type, record) {
   const c = config[type];
-  const fields = [{ key: 'id', label: 'Identificador' }, ...c.fields];
-  showDialog(`Detalhes d${c.article} ${c.singular}`, `<div class="dialog-body"><dl class="detail-grid">${fields.map(field => `<div><dt>${field.label}</dt><dd>${field.key === 'valorDiariaBase' ? currency(record[field.key]) : escapeHtml(record[field.key]) || '—'}</dd></div>`).join('')}</dl></div><div class="dialog-foot"><button type="button" class="button" data-close>Fechar</button></div>`);
+  const fields = [field('id', 'Identificador'), ...c.fields];
+  if (type === 'alugueis') fields.push(field('dataDevolucao', 'Devolução'), field('kmFinal', 'Km final'), field('valorTotal', 'Total'));
+  showDialog(`Detalhes d${c.article} ${c.singular}`, `<div class="dialog-body"><dl class="detail-grid">${fields.map(field => `<div><dt>${field.label}</dt><dd>${escapeHtml(displayValue(record, field.displayKey ?? field.key))}</dd></div>`).join('')}</dl></div><div class="dialog-foot"><button type="button" class="button" data-close>Fechar</button></div>`);
 }
 
 function openDelete(type, record) {
   const c = config[type];
-  showDialog('Confirmar exclusão', `<form id="delete-form"><div class="dialog-body"><div class="alert" role="alert" data-error hidden></div><p>Deseja excluir ${c.article} ${c.singular} <strong>${escapeHtml(record.nome)}</strong>?</p><p class="form-note">A exclusão será impedida se houver veículos vinculados a este cadastro.</p></div><div class="dialog-foot"><button type="button" class="button" data-close>Cancelar</button><button type="submit" class="button danger" id="delete-record">Excluir registro</button></div></form>`);
+  showDialog('Confirmar exclusão', `<form id="delete-form"><div class="dialog-body"><div class="alert" role="alert" data-error hidden></div><p>Deseja excluir ${c.article} ${c.singular} <strong>${escapeHtml(record.nome ?? record.modelo ?? `#${record.id}`)}</strong>?</p><p class="form-note">A exclusão será impedida se houver registros vinculados a este cadastro.</p></div><div class="dialog-foot"><button type="button" class="button" data-close>Cancelar</button><button type="submit" class="button danger" id="delete-record">Excluir registro</button></div></form>`);
   const form = $('#delete-form');
   form.addEventListener('submit', async event => {
     event.preventDefault();
@@ -265,12 +348,27 @@ function openDelete(type, record) {
   });
 }
 
+let closeReports;
 function navigate() {
   // Uma gravação deve terminar antes de trocar a tela, inclusive pelo histórico.
   if (saving) { history.replaceState(null, '', `#${state.page}`); return; }
   closeDialog();
   ++actionSequence;
+  closeReports?.();
+  closeReports = undefined;
+  listController?.abort();
+  ++listSequence;
   const requested = location.hash.slice(1);
+  if (requested === 'consultas') {
+    state.page = requested;
+    document.title = 'Consultas e relatórios | Locadora';
+    document.querySelectorAll('nav [data-page]').forEach(link => {
+      if (link.dataset.page === requested) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    closeReports = mountReports($('#content'), api, displayValue);
+    return;
+  }
   state.page = Object.hasOwn(config, requested) ? requested : 'fabricantes';
   state.filters = {}; state.rows = []; state.error = null;
   renderFrame(); loadRows();

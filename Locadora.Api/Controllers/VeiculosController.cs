@@ -15,10 +15,21 @@ public class VeiculosController : ControllerBase
     public VeiculosController(ApplicationContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<VeiculoDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<VeiculoDto>>> GetAll([FromQuery] string? modelo = null, [FromQuery] string? placa = null)
     {
-        var veiculos = await _context.Veiculos
-            .AsNoTracking()
+        var query = _context.Veiculos.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(modelo))
+        {
+            var termo = modelo.Trim();
+            query = query.Where(r => r.Modelo.Contains(termo));
+        }
+        if (!string.IsNullOrWhiteSpace(placa))
+        {
+            var termo = placa.Trim().ToUpperInvariant();
+            query = query.Where(r => r.Placa.Contains(termo));
+        }
+
+        var veiculos = await query
             .Include(v => v.Fabricante)
             .Include(v => v.Categoria)
             .OrderBy(v => v.Modelo)

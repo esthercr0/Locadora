@@ -15,10 +15,21 @@ public class ClientesController : ControllerBase
     public ClientesController(ApplicationContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClienteDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ClienteDto>>> GetAll([FromQuery] string? nome = null, [FromQuery] string? cpf = null)
     {
-        var clientes = await _context.Clientes
-            .AsNoTracking()
+        var query = _context.Clientes.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(nome))
+        {
+            var termo = nome.Trim();
+            query = query.Where(r => r.Nome.Contains(termo));
+        }
+        if (!string.IsNullOrWhiteSpace(cpf))
+        {
+            var termo = cpf.Trim();
+            query = query.Where(r => r.Cpf.Contains(termo));
+        }
+
+        var clientes = await query
             .OrderBy(c => c.Nome)
             .Select(c => new ClienteDto(c.Id, c.Nome, c.Cpf, c.Email, c.Telefone))
             .ToListAsync();
