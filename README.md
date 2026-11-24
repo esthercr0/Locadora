@@ -384,5 +384,6 @@ Com a conclusão desta etapa, a API possui:
 ---
 
 ## Etapa 4 — Vídeo Apresentação
-*(a preencher...)*
+Link do vídeo Etapa 1: https://youtu.be/LPZ9Gq1rX6U
+Link do vídeo Etapa 2: https://youtu.be/6bVOBj5iDRM 
 ---
