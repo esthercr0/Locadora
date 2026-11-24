@@ -1,4 +1,4 @@
-# Roteiro do vídeo da Locadora
+# Roteiro do vídeo da Locadora (Publicado para orientação na avaliação)
 
 Duração sugerida: 3min40s. Grave a tela e narre com sua voz. Use dados fictícios cadastrados no banco e mostre os resultados reais da aplicação.
 
