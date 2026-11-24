@@ -15,10 +15,21 @@ public class AlugueisController : ControllerBase
     public AlugueisController(ApplicationContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AluguelDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<AluguelDto>>> GetAll([FromQuery] string? cliente = null, [FromQuery] string? placa = null)
     {
-        var alugueis = await _context.Alugueis
-            .AsNoTracking()
+        var query = _context.Alugueis.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(cliente))
+        {
+            var termo = cliente.Trim();
+            query = query.Where(r => r.Cliente.Nome.Contains(termo));
+        }
+        if (!string.IsNullOrWhiteSpace(placa))
+        {
+            var termo = placa.Trim().ToUpperInvariant();
+            query = query.Where(r => r.Veiculo.Placa.Contains(termo));
+        }
+
+        var alugueis = await query
             .Include(a => a.Cliente)
             .Include(a => a.Veiculo)
             .OrderByDescending(a => a.DataRetirada)

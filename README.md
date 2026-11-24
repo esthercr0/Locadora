@@ -2,6 +2,22 @@
 
 Sistema de aluguel de veículos desenvolvido em C# com Entity Framework, SQL Server Express e Swagger.
 
+## Segunda entrega: front-end em desenvolvimento
+
+O visual dos [wireframes navegáveis](Docs/Wireframes/README.md) foi aprovado. O primeiro bloco integra Fabricantes e Categorias à API real, com cadastro, detalhes, edição, exclusão e filtros em múltiplos campos. As demais entidades e as cinco consultas serão integradas nos próximos blocos.
+
+Para executar a interface, na raiz do repositório:
+
+```powershell
+dotnet run --project Locadora.Api --launch-profile http
+```
+
+Abra http://localhost:5215. O SQL Server configurado em `Locadora.Api/appsettings.json` precisa estar acessível para consultar e gravar registros.
+
+Veja as [instruções do front-end](frontend/README.md) e o [registro das verificações do bloco 1](Docs/Frontend-Bloco1.md). A validação com o banco, o link público renderizado dos wireframes, o relatório LaTeX e o vídeo desta segunda entrega ainda estão pendentes.
+
+---
+
 **Aluna:** Esther Caldeira Rivadalves
 **Disciplina:** Tecnologias para Análise e Desenvolvimento de Sistemas – PUC Minas
 **Trabalho individual — 30 pontos, entregue em 4 etapas**

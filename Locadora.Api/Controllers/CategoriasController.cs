@@ -15,10 +15,33 @@ public class CategoriasController : ControllerBase
     public CategoriasController(ApplicationContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CategoriaDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<CategoriaDto>>> GetAll(
+        [FromQuery] string? nome = null,
+        [FromQuery] decimal? diariaMin = null,
+        [FromQuery] decimal? diariaMax = null)
     {
-        var categorias = await _context.Categorias
-            .AsNoTracking()
+        if (diariaMin < 0)
+            ModelState.AddModelError(nameof(diariaMin), "A diária mínima não pode ser negativa.");
+        if (diariaMax < 0)
+            ModelState.AddModelError(nameof(diariaMax), "A diária máxima não pode ser negativa.");
+        if (diariaMin.HasValue && diariaMax.HasValue && diariaMin > diariaMax)
+            ModelState.AddModelError(nameof(diariaMax), "A diária máxima deve ser maior ou igual à mínima.");
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        var query = _context.Categorias.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(nome))
+        {
+            var termo = nome.Trim();
+            query = query.Where(c => c.Nome.Contains(termo));
+        }
+        if (diariaMin.HasValue)
+            query = query.Where(c => c.ValorDiariaBase >= diariaMin.Value);
+        if (diariaMax.HasValue)
+            query = query.Where(c => c.ValorDiariaBase <= diariaMax.Value);
+
+        var categorias = await query
             .OrderBy(c => c.Nome)
             .Select(c => new CategoriaDto(c.Id, c.Nome, c.Descricao, c.ValorDiariaBase))
             .ToListAsync();

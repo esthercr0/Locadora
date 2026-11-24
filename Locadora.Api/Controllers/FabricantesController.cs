@@ -15,10 +15,25 @@ public class FabricantesController : ControllerBase
     public FabricantesController(ApplicationContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<FabricanteDto>>> GetAll()
+    public async Task<ActionResult<IEnumerable<FabricanteDto>>> GetAll(
+        [FromQuery] string? nome = null,
+        [FromQuery] string? paisOrigem = null)
     {
-        var fabricantes = await _context.Fabricantes
-            .AsNoTracking()
+        var query = _context.Fabricantes.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(nome))
+        {
+            var termo = nome.Trim();
+            query = query.Where(f => f.Nome.Contains(termo));
+        }
+
+        if (!string.IsNullOrWhiteSpace(paisOrigem))
+        {
+            var termo = paisOrigem.Trim();
+            query = query.Where(f => f.PaisOrigem != null && f.PaisOrigem.Contains(termo));
+        }
+
+        var fabricantes = await query
             .OrderBy(f => f.Nome)
             .Select(f => new FabricanteDto(f.Id, f.Nome, f.PaisOrigem))
             .ToListAsync();

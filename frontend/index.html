@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Gestão de fabricantes e categorias da locadora de veículos.">
+  <title>Fabricantes | Locadora</title>
+  <link rel="stylesheet" href="vendor/bootstrap-grid.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Ir para o conteúdo</a>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">L</span><div><strong>Locadora</strong><span>Gestão de veículos</span></div></div>
+      <div><p class="nav-label">CADASTROS</p><nav aria-label="Navegação principal">
+        <a href="#fabricantes" data-page="fabricantes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V9l6 3V7l6 3V3h5v18zM7 16v2m5-2v2m5-2v2"/></svg>Fabricantes</a>
+        <a href="#categorias" data-page="categorias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h8l10 10-7 7L3 10z"/><circle cx="7" cy="8" r="1"/></svg>Categorias</a>
+        <a href="#veiculos" data-page="veiculos">Veículos</a>
+        <a href="#clientes" data-page="clientes">Clientes</a>
+        <a href="#alugueis" data-page="alugueis">Aluguéis</a>
+        <a href="#consultas" data-page="consultas">Consultas e relatórios</a>
+      </nav></div>
+      <footer><strong>Esther Caldeira Rivadalves</strong><span>Projeto acadêmico · PUC Minas</span></footer>
+    </aside>
+    <main class="main">
+      <div class="topbar"><span>Locadora de veículos</span><span>Gestão de cadastros</span></div>
+      <div class="canvas" id="content" tabindex="-1"></div>
+    </main>
+  </div>
+  <dialog id="record-dialog" class="record-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-head"><h2 id="dialog-title"></h2><button type="button" class="close-button" id="close-dialog" aria-label="Fechar janela">×</button></div>
+    <div id="dialog-content"></div>
+  </dialog>
+  <div id="notifications" aria-live="polite" aria-atomic="true"></div>
+  <noscript><p class="noscript">Ative o JavaScript no navegador para consultar e gerenciar os cadastros.</p></noscript>
+</body>
+</html>
